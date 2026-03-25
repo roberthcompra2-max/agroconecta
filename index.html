@@ -3,290 +3,277 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgroConecta | Conectando o Campo</title>
+    <title>AgroConecta | Sistema Oficial</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-storage-compat.js"></script>
+
     <style>
-        :root {
-            --primary: #2e7d32;
-            --secondary: #f57c00;
-            --danger: #d63031;
-            --bg: #f4f7f6;
-            --white: #ffffff;
-            --text: #2d3436;
-        }
-
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
-
-        /* --- SPLASH SCREEN --- */
+        :root { --primary: #2e7d32; --secondary: #f57c00; --bg: #f4f7f6; --white: #ffffff; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; }
+        
+        /* --- SPLASH --- */
         #splash {
             position: fixed; inset: 0; background: var(--primary);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 3000; color: white; transition: 0.8s ease-out;
+            z-index: 5000; color: white; transition: 0.8s;
         }
 
-        /* --- HEADER FIXO (NOME DO APP) --- */
-        header {
-            background: var(--primary); color: white; padding: 15px;
-            text-align: center; font-weight: bold; font-size: 1.2rem;
-            position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
+        header { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; position: sticky; top: 0; z-index: 1000; }
 
-        /* --- TELAS --- */
-        .screen { display: none; padding: 20px; box-sizing: border-box; min-height: calc(100vh - 60px); }
-        .active-screen { display: block; animation: fadeIn 0.4s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .screen { display: none; padding: 20px; box-sizing: border-box; min-height: 90vh; animation: fadeIn 0.4s; }
+        .active-screen { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* --- UI LOGIN --- */
-        .login-container { max-width: 400px; margin: 40px auto; text-align: center; }
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 450px; margin: 0 auto; }
+        input, select { width: 100%; padding: 12px; margin: 5px 0 15px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
         
-        input, select, textarea {
-            width: 100%; padding: 15px; margin: 10px 0; border: 1px solid #ddd;
-            border-radius: 12px; font-size: 1rem; box-sizing: border-box; outline: none;
-        }
-
-        .btn {
-            width: 100%; padding: 16px; border: none; border-radius: 12px;
-            font-weight: bold; cursor: pointer; transition: 0.3s;
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-        }
+        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background: var(--primary); color: white; }
-        .btn-outline { background: none; border: 2px solid var(--primary); color: var(--primary); margin-top: 10px; }
+        .btn-outline { background: none; border: 2px solid var(--primary); color: var(--primary); }
+        
+        .role-card { border: 2px solid #eee; padding: 15px; border-radius: 15px; text-align: center; cursor: pointer; flex: 1; }
+        .role-card.selected { border-color: var(--primary); background: #e8f5e9; }
 
-        /* --- COMPONENTES DE PRODUTO --- */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
-        .prod-card { background: white; border-radius: 15px; overflow: hidden; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .prod-img { width: 100%; height: 140px; object-fit: cover; }
-        .ribbon {
-            position: absolute; top: 15px; right: -30px; background: var(--danger);
-            color: white; padding: 5px 35px; font-size: 0.6rem; font-weight: bold;
-            transform: rotate(45deg); z-index: 10;
-        }
-        .prod-info { padding: 12px; }
-        .prod-info h4 { margin: 0; font-size: 0.9rem; color: var(--primary); }
-        .price { color: var(--secondary); font-weight: bold; font-size: 1rem; display: block; margin: 5px 0; }
-
-        /* --- UPLOAD FOTO --- */
-        .upload-box {
-            border: 2px dashed #ccc; padding: 30px; text-align: center;
-            border-radius: 15px; color: #888; cursor: pointer; margin-bottom: 10px;
-        }
-        #preview-img { width: 100%; border-radius: 10px; display: none; margin-top: 10px; }
-
-        /* --- NAV BOTTOM --- */
-        .nav-bar {
-            position: fixed; bottom: 0; left: 0; right: 0; background: white;
-            display: flex; justify-content: space-around; padding: 12px;
-            border-top: 1px solid #eee; z-index: 1000;
-        }
-        .nav-item { border: none; background: none; color: #b2bec3; cursor: pointer; font-size: 0.7rem; }
-        .nav-item.active { color: var(--primary); }
-        .nav-item i { font-size: 1.4rem; display: block; }
-
+        /* Vitrine */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        .prod-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .prod-img { width: 100%; height: 120px; object-fit: cover; }
+        .upload-box { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 15px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div id="splash">
-        <i class="fas fa-seedling fa-4x" style="margin-bottom: 20px;"></i>
-        <h1 style="letter-spacing: 2px;">AGROCONECTA</h1>
-        <p>O Campo na palma da mão</p>
+        <i class="fas fa-seedling fa-4x"></i>
+        <h1>AGROCONECTA</h1>
     </div>
 
     <header>AGROCONECTA</header>
 
-    <div id="screen-login" class="screen active-screen">
-        <div class="login-container">
-            <div class="card">
-                <h3>Acessar Plataforma</h3>
-                <input type="text" id="user-name" placeholder="Seu Nome">
-                <select id="user-role">
-                    <option value="comprador">Sou Comprador (Mercado)</option>
-                    <option value="agricultor">Sou Agricultor (Produtor)</option>
-                </select>
-                <button class="btn btn-primary" onclick="app.login()">ENTRAR</button>
-            </div>
+    <div id="screen-start" class="screen active-screen">
+        <div class="card" style="text-align: center; margin-top: 40px;">
+            <i class="fas fa-leaf fa-3x" style="color: var(--primary);"></i>
+            <h2>Bem-vindo!</h2>
+            <button class="btn btn-primary" onclick="app.nav('screen-register')">CRIAR NOVA CONTA</button>
+            <button class="btn btn-outline" onclick="app.nav('screen-login')">JÁ TENHO CONTA (LOGIN)</button>
         </div>
     </div>
 
-    <div id="screen-market" class="screen">
-        <input type="text" placeholder="🔍 Buscar produtos ou cidades..." oninput="app.filter(this.value)">
-        <div id="market-grid" class="grid"></div>
-    </div>
-
-    <div id="screen-post" class="screen">
+    <div id="screen-register" class="screen">
         <div class="card">
-            <h3><i class="fas fa-camera"></i> Novo Anúncio</h3>
-            <div class="upload-box" onclick="document.getElementById('file-input').click()">
-                <i class="fas fa-cloud-upload-alt fa-2x"></i><br>Tirar Foto Real
-                <img id="preview-img" src="">
+            <h3>Cadastro</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <div id="sel-agri" class="role-card selected" onclick="app.setRole('agricultor')">🚜 Agricultor</div>
+                <div id="sel-super" class="role-card" onclick="app.setRole('supermercado')">🛒 Mercado</div>
             </div>
-            <input type="file" id="file-input" accept="image/*" style="display:none" onchange="app.handleFile(this)">
-            <input type="text" id="p-nome" placeholder="Nome do Produto">
-            <input type="text" id="p-preco" placeholder="Preço (ex: R$ 40,00 saca)">
-            <button class="btn btn-primary" onclick="app.createAd()">POSTAR AGORA</button>
+
+            <input type="text" id="reg-user" placeholder="Nome de Usuário (Login)">
+            <input type="password" id="reg-pass" placeholder="Sua Senha">
+
+            <div id="form-agri">
+                <input type="text" id="reg-nome-completo" placeholder="Nome Completo">
+                <input type="text" id="reg-cidade" placeholder="Cidade">
+                <input type="text" id="reg-whats" placeholder="WhatsApp (99) 9...">
+                <input type="email" id="reg-email" placeholder="E-mail">
+                <input type="text" id="reg-caf" placeholder="Número do CAF">
+            </div>
+
+            <div id="form-super" style="display:none">
+                <input type="text" id="reg-loja" placeholder="Nome do Estabelecimento">
+                <input type="text" id="reg-cnpj" placeholder="CNPJ">
+                <input type="text" id="reg-end" placeholder="Endereço">
+                <input type="text" id="reg-contato" placeholder="Telefone/E-mail Contato">
+            </div>
+
+            <button class="btn btn-primary" id="btn-reg" onclick="app.handleRegister()">FINALIZAR CADASTRO</button>
+            <button class="btn" style="background:none" onclick="app.nav('screen-start')">Voltar</button>
         </div>
-        <h3 style="margin-top: 30px;">Gerenciar Minhas Vendas</h3>
-        <div id="producer-grid" class="grid"></div>
     </div>
 
-    <nav id="app-nav" class="nav-bar" style="display: none;">
-        <button id="nav-home" class="nav-item active" onclick="app.navigate('home')">
-            <i class="fas fa-store"></i>Início
-        </button>
-        <button id="nav-action" class="nav-item" onclick="app.navigate('action')">
-            </button>
-        <button class="nav-item" onclick="location.reload()">
-            <i class="fas fa-sign-out-alt"></i>Sair
-        </button>
-    </nav>
+    <div id="screen-login" class="screen">
+        <div class="card">
+            <h3>Login</h3>
+            <input type="text" id="login-user" placeholder="Usuário">
+            <input type="password" id="login-pass" placeholder="Senha">
+            <button class="btn btn-primary" onclick="app.handleLogin()">ENTRAR NO APP</button>
+            <button class="btn" style="background:none" onclick="app.nav('screen-start')">Voltar</button>
+        </div>
+    </div>
+
+    <div id="screen-main" class="screen">
+        <h2 id="welcome-msg" style="color: var(--primary);">Olá!</h2>
+        
+        <div id="area-agricultor" style="display:none">
+            <div class="card">
+                <h4><i class="fas fa-camera"></i> Postar Produto Real</h4>
+                <div class="upload-box" onclick="document.getElementById('p-file').click()">
+                    <i class="fas fa-image fa-2x"></i><br>Foto do Produto
+                    <img id="prev" style="width:100%; display:none; margin-top:10px; border-radius:10px;">
+                </div>
+                <input type="file" id="p-file" style="display:none" onchange="app.preview(this)">
+                <input type="text" id="p-nome" placeholder="Produto (Ex: Alface)">
+                <input type="text" id="p-preco" placeholder="Preço (R$)">
+                <button class="btn btn-primary" id="btn-pub" onclick="app.publish()">PUBLICAR NA NUVEM</button>
+            </div>
+            <h4>Meus Anúncios</h4>
+            <div id="list-mine" class="grid"></div>
+        </div>
+
+        <div id="area-supermercado" style="display:none">
+            <h4>Vitrine de Produtos Frescos</h4>
+            <div id="list-market" class="grid"></div>
+        </div>
+
+        <button class="btn" style="color: red; background: none; margin-top: 20px;" onclick="location.reload()">Sair da Conta</button>
+    </div>
 
     <script>
-        const app = {
-            db: JSON.parse(localStorage.getItem('agro_cloud_v1')) || { ads: [] },
-            user: null,
-            tempImg: "",
-
-            init() {
-                setTimeout(() => {
-                    document.getElementById('splash').style.opacity = '0';
-                    setTimeout(() => document.getElementById('splash').style.display = 'none', 800);
-                }, 2000);
-            },
-
-            login() {
-                const name = document.getElementById('user-name').value;
-                const role = document.getElementById('user-role').value;
-                if(!name) return alert("Digite seu nome!");
-
-                this.user = { name, role };
-                document.getElementById('app-nav').style.display = 'flex';
-                this.setupNavigation();
-                
-                if(role === 'agricultor') {
-                    this.navigate('action');
-                } else {
-                    this.navigate('home');
-                }
-            },
-
-            setupNavigation() {
-                const navAction = document.getElementById('nav-action');
-                if(this.user.role === 'agricultor') {
-                    navAction.innerHTML = '<i class="fas fa-plus-circle"></i>Vender';
-                } else {
-                    navAction.innerHTML = '<i class="fas fa-shopping-basket"></i>Pedidos';
-                }
-            },
-
-            navigate(page) {
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
-                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-
-                if(page === 'home') {
-                    document.getElementById('screen-market').classList.add('active-screen');
-                    document.getElementById('nav-home').classList.add('active');
-                    this.renderMarket();
-                } else if(page === 'action') {
-                    if(this.user.role === 'agricultor') {
-                        document.getElementById('screen-post').classList.add('active-screen');
-                        document.getElementById('nav-action').classList.add('active');
-                        this.renderProducer();
-                    } else {
-                        alert("Em breve: Histórico de Pedidos");
-                    }
-                }
-            },
-
-            handleFile(input) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    this.tempImg = e.target.result;
-                    const prev = document.getElementById('preview-img');
-                    prev.src = e.target.result;
-                    prev.style.display = 'block';
-                };
-                reader.readAsDataURL(input.files[0]);
-            },
-
-            createAd() {
-                const ad = {
-                    id: Date.now(),
-                    owner: this.user.name,
-                    nome: document.getElementById('p-nome').value,
-                    preco: document.getElementById('p-preco').value,
-                    img: this.tempImg,
-                    status: 'ativo',
-                    cidade: 'Imperatriz-MA'
-                };
-                if(!ad.nome || !ad.img) return alert("Preencha o nome e tire uma foto!");
-
-                this.db.ads.push(ad);
-                this.save();
-                alert("Produto publicado com sucesso!");
-                this.navigate('home');
-                // Limpar campos
-                this.tempImg = "";
-                document.getElementById('p-nome').value = "";
-                document.getElementById('p-preco').value = "";
-                document.getElementById('preview-img').style.display = 'none';
-            },
-
-            renderMarket(filter = '') {
-                const grid = document.getElementById('market-grid');
-                const list = this.db.ads.filter(a => a.nome.toLowerCase().includes(filter.toLowerCase()));
-                
-                grid.innerHTML = list.slice().reverse().map(a => `
-                    <div class="prod-card">
-                        ${a.status === 'vendido' ? '<div class="ribbon">VENDIDO</div>' : ''}
-                        <img src="${a.img}" class="prod-img" style="${a.status === 'vendido' ? 'filter:grayscale(1)' : ''}">
-                        <div class="prod-info">
-                            <h4>${a.nome}</h4>
-                            <span class="price">${a.preco}</span>
-                            <small>📍 ${a.cidade}</small>
-                            ${a.status === 'ativo' ? 
-                                `<button class="btn btn-primary" style="padding:8px; margin-top:10px; font-size:0.7rem; background:#25d366" onclick="window.open('https://wa.me/559900000000')">WHATSAPP</button>` 
-                                : `<button disabled class="btn" style="padding:8px; margin-top:10px; font-size:0.7rem; background:#ccc">INDISPONÍVEL</button>`}
-                        </div>
-                    </div>
-                `).join('');
-            },
-
-            renderProducer() {
-                const grid = document.getElementById('producer-grid');
-                const myAds = this.db.ads.filter(a => a.owner === this.user.name);
-                
-                grid.innerHTML = myAds.slice().reverse().map(a => `
-                    <div class="prod-card">
-                        ${a.status === 'vendido' ? '<div class="ribbon">VENDIDO</div>' : ''}
-                        <img src="${a.img}" class="prod-img">
-                        <div class="prod-info">
-                            <h4>${a.nome}</h4>
-                            ${a.status === 'ativo' ? 
-                                `<button class="btn btn-primary" style="padding:5px; font-size:0.6rem; background:var(--secondary)" onclick="app.setSold(${a.id})">MARCAR VENDIDO</button>` : ''}
-                            <button class="btn" style="padding:5px; font-size:0.6rem; color:red; background:none" onclick="app.delete(${a.id})">EXCLUIR</button>
-                        </div>
-                    </div>
-                `).join('');
-            },
-
-            setSold(id) {
-                const i = this.db.ads.findIndex(x => x.id === id);
-                this.db.ads[i].status = 'vendido';
-                this.save(); this.renderProducer();
-            },
-
-            delete(id) {
-                if(confirm("Apagar anúncio?")) {
-                    this.db.ads = this.db.ads.filter(x => x.id !== id);
-                    this.save(); this.renderProducer();
-                }
-            },
-
-            filter(v) { this.renderMarket(v); },
-            save() { localStorage.setItem('agro_cloud_v1', JSON.stringify(this.db)); }
+        // CONFIGURAÇÃO DO SEU FIREBASE
+        const firebaseConfig = {
+            apiKey: "AIzaSyBCsYWM16EP0G1Liw89G0DwSvFm6CF3aH8",
+            authDomain: "agroconecta-d0247.firebaseapp.com",
+            projectId: "agroconecta-d0247",
+            storageBucket: "agroconecta-d0247.appspot.com",
+            messagingSenderId: "461195415877",
+            appId: "1:461195415877:web:e72e7da89497b434b3aa2c"
         };
 
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const storage = firebase.storage();
+
+        const app = {
+            currentRole: 'agricultor',
+            currentUser: null,
+            tempFile: null,
+
+            init() {
+                setTimeout(() => { document.getElementById('splash').style.opacity = '0'; 
+                setTimeout(() => document.getElementById('splash').style.display = 'none', 800); }, 2000);
+            },
+
+            nav(id) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+                document.getElementById(id).classList.add('active-screen');
+                window.scrollTo(0,0);
+            },
+
+            setRole(role) {
+                this.currentRole = role;
+                document.getElementById('sel-agri').classList.toggle('selected', role === 'agricultor');
+                document.getElementById('sel-super').classList.toggle('selected', role === 'supermercado');
+                document.getElementById('form-agri').style.display = (role === 'agricultor') ? 'block' : 'none';
+                document.getElementById('form-super').style.display = (role === 'supermercado') ? 'block' : 'none';
+            },
+
+            async handleRegister() {
+                const user = document.getElementById('reg-user').value;
+                const pass = document.getElementById('reg-pass').value;
+                if(!user || !pass) return alert("Usuário e Senha obrigatórios!");
+
+                const dados = {
+                    user, pass, role: this.currentRole,
+                    nomeExibicao: this.currentRole === 'agricultor' ? document.getElementById('reg-nome-completo').value : document.getElementById('reg-loja').value,
+                    cidade: document.getElementById('reg-cidade').value || "",
+                    whats: document.getElementById('reg-whats').value || ""
+                };
+
+                await db.collection("usuarios").doc(user).set(dados);
+                alert("Conta criada! Faça login agora.");
+                this.nav('screen-login');
+            },
+
+            async handleLogin() {
+                const user = document.getElementById('login-user').value;
+                const pass = document.getElementById('login-pass').value;
+                
+                const doc = await db.collection("usuarios").doc(user).get();
+                if(doc.exists && doc.data().pass === pass) {
+                    this.currentUser = doc.data();
+                    this.enterApp();
+                } else { alert("Usuário ou senha incorretos!"); }
+            },
+
+            enterApp() {
+                this.nav('screen-main');
+                document.getElementById('welcome-msg').innerText = "Olá, " + this.currentUser.nomeExibicao;
+                if(this.currentUser.role === 'agricultor') {
+                    document.getElementById('area-agricultor').style.display = 'block';
+                    this.loadMyAds();
+                } else {
+                    document.getElementById('area-supermercado').style.display = 'block';
+                    this.loadMarket();
+                }
+            },
+
+            preview(input) {
+                if(input.files[0]) {
+                    this.tempFile = input.files[0];
+                    const reader = new FileReader();
+                    reader.onload = (e) => { 
+                        const img = document.getElementById('prev');
+                        img.src = e.target.result; img.style.display = 'block';
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                }
+            },
+
+            async publish() {
+                const btn = document.getElementById('btn-pub');
+                const nome = document.getElementById('p-nome').value;
+                const preco = document.getElementById('p-preco').value;
+
+                if(!this.tempFile || !nome) return alert("Adicione foto e nome!");
+                
+                btn.disabled = true; btn.innerText = "Subindo para nuvem...";
+
+                const ref = storage.ref(`produtos/${Date.now()}_${this.tempFile.name}`);
+                await ref.put(this.tempFile);
+                const url = await ref.getDownloadURL();
+
+                await db.collection("anuncios").add({
+                    nome, preco, url, 
+                    vendedor: this.currentUser.nomeExibicao,
+                    whats: this.currentUser.whats,
+                    data: new Date()
+                });
+
+                alert("Publicado!");
+                location.reload();
+            },
+
+            loadMarket() {
+                db.collection("anuncios").orderBy("data", "desc").onSnapshot(snap => {
+                    const grid = document.getElementById('list-market');
+                    grid.innerHTML = "";
+                    snap.forEach(doc => {
+                        const p = doc.data();
+                        grid.innerHTML += `
+                            <div class="prod-card">
+                                <img src="${p.url}" class="prod-img">
+                                <div style="padding:10px">
+                                    <b>${p.nome}</b><br><span style="color:var(--secondary)">${p.preco}</span><br>
+                                    <button onclick="window.open('https://wa.me/${p.whats}')" class="btn btn-primary" style="padding:5px; font-size:0.7rem; background:#25d366; margin-top:5px">NEGOCIAR</button>
+                                </div>
+                            </div>`;
+                    });
+                });
+            },
+
+            loadMyAds() {
+                db.collection("anuncios").where("vendedor", "==", this.currentUser.nomeExibicao).onSnapshot(snap => {
+                    const grid = document.getElementById('list-mine');
+                    grid.innerHTML = "";
+                    snap.forEach(doc => {
+                        const p = doc.data();
+                        grid.innerHTML += `<div class="prod-card"><img src="${p.url}" class="prod-img"><div style="padding:10px"><b>${p.nome}</b></div></div>`;
+                    });
+                });
+            }
+        };
         app.init();
     </script>
 </body>
