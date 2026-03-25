@@ -5,16 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgroConecta | Sistema Oficial</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-storage-compat.js"></script>
-
     <style>
-        :root { --primary: #2e7d32; --secondary: #f57c00; --bg: #f4f7f6; --white: #ffffff; }
+        :root { --primary: #2e7d32; --secondary: #f57c00; --bg: #f4f7f6; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; }
         
-        /* --- SPLASH --- */
+        /* --- SPLASH SCREEN --- */
         #splash {
             position: fixed; inset: 0; background: var(--primary);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
@@ -27,21 +22,23 @@
         .active-screen { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 450px; margin: 0 auto; }
+        .card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 450px; margin: 0 auto 20px auto; }
         input, select { width: 100%; padding: 12px; margin: 5px 0 15px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; }
+        label { font-size: 0.8rem; font-weight: bold; color: var(--primary); }
         
         .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .btn-primary { background: var(--primary); color: white; }
         .btn-outline { background: none; border: 2px solid var(--primary); color: var(--primary); }
         
-        .role-card { border: 2px solid #eee; padding: 15px; border-radius: 15px; text-align: center; cursor: pointer; flex: 1; }
-        .role-card.selected { border-color: var(--primary); background: #e8f5e9; }
+        .role-selector { display: flex; gap: 10px; margin-bottom: 20px; }
+        .role-card { border: 2px solid #eee; padding: 15px; border-radius: 15px; text-align: center; cursor: pointer; flex: 1; transition: 0.3s; }
+        .role-card.selected { border-color: var(--primary); background: #e8f5e9; transform: scale(1.05); }
 
         /* Vitrine */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; }
         .prod-card { background: white; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .prod-img { width: 100%; height: 120px; object-fit: cover; }
-        .upload-box { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 15px; cursor: pointer; }
+        .prod-img { width: 100%; height: 130px; object-fit: cover; }
+        .upload-box { border: 2px dashed #ccc; padding: 20px; text-align: center; border-radius: 15px; cursor: pointer; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -49,13 +46,14 @@
     <div id="splash">
         <i class="fas fa-seedling fa-4x"></i>
         <h1>AGROCONECTA</h1>
+        <p>Conectando o produtor ao mercado</p>
     </div>
 
     <header>AGROCONECTA</header>
 
     <div id="screen-start" class="screen active-screen">
-        <div class="card" style="text-align: center; margin-top: 40px;">
-            <i class="fas fa-leaf fa-3x" style="color: var(--primary);"></i>
+        <div class="card" style="text-align: center; margin-top: 50px;">
+            <i class="fas fa-leaf fa-4x" style="color: var(--primary); margin-bottom: 20px;"></i>
             <h2>Bem-vindo!</h2>
             <button class="btn btn-primary" onclick="app.nav('screen-register')">CRIAR NOVA CONTA</button>
             <button class="btn btn-outline" onclick="app.nav('screen-login')">JÁ TENHO CONTA (LOGIN)</button>
@@ -64,217 +62,197 @@
 
     <div id="screen-register" class="screen">
         <div class="card">
-            <h3>Cadastro</h3>
-            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <h3>Cadastro de Usuário</h3>
+            <div class="role-selector">
                 <div id="sel-agri" class="role-card selected" onclick="app.setRole('agricultor')">🚜 Agricultor</div>
                 <div id="sel-super" class="role-card" onclick="app.setRole('supermercado')">🛒 Mercado</div>
             </div>
 
-            <input type="text" id="reg-user" placeholder="Nome de Usuário (Login)">
-            <input type="password" id="reg-pass" placeholder="Sua Senha">
+            <label>Nome de Usuário (Login)</label>
+            <input type="text" id="reg-user" placeholder="Ex: joao_agro">
+            
+            <label>Senha</label>
+            <input type="password" id="reg-pass" placeholder="******">
 
             <div id="form-agri">
-                <input type="text" id="reg-nome-completo" placeholder="Nome Completo">
-                <input type="text" id="reg-cidade" placeholder="Cidade">
-                <input type="text" id="reg-whats" placeholder="WhatsApp (99) 9...">
-                <input type="email" id="reg-email" placeholder="E-mail">
-                <input type="text" id="reg-caf" placeholder="Número do CAF">
+                <label>Nome Completo</label><input type="text" id="reg-nome-agri">
+                <label>Cidade</label><input type="text" id="reg-cidade">
+                <label>Número de WhatsApp</label><input type="text" id="reg-whats" placeholder="(99) 9....">
+                <label>Endereço de E-mail</label><input type="email" id="reg-email">
+                <label>Número do CAF</label><input type="text" id="reg-caf" placeholder="Cadastro Agricultura Familiar">
             </div>
 
             <div id="form-super" style="display:none">
-                <input type="text" id="reg-loja" placeholder="Nome do Estabelecimento">
-                <input type="text" id="reg-cnpj" placeholder="CNPJ">
-                <input type="text" id="reg-end" placeholder="Endereço">
-                <input type="text" id="reg-contato" placeholder="Telefone/E-mail Contato">
+                <label>Nome do Estabelecimento</label><input type="text" id="reg-loja">
+                <label>CNPJ</label><input type="text" id="reg-cnpj">
+                <label>Endereço</label><input type="text" id="reg-end">
+                <label>Contato (E-mail/Telefone)</label><input type="text" id="reg-contato">
             </div>
 
-            <button class="btn btn-primary" id="btn-reg" onclick="app.handleRegister()">FINALIZAR CADASTRO</button>
+            <button class="btn btn-primary" onclick="app.register()">FINALIZAR CADASTRO</button>
             <button class="btn" style="background:none" onclick="app.nav('screen-start')">Voltar</button>
         </div>
     </div>
 
     <div id="screen-login" class="screen">
-        <div class="card">
-            <h3>Login</h3>
-            <input type="text" id="login-user" placeholder="Usuário">
-            <input type="password" id="login-pass" placeholder="Senha">
-            <button class="btn btn-primary" onclick="app.handleLogin()">ENTRAR NO APP</button>
+        <div class="card" style="margin-top: 50px;">
+            <h3>Login AgroConecta</h3>
+            <input type="text" id="log-user" placeholder="Usuário">
+            <input type="password" id="log-pass" placeholder="Senha">
+            <button class="btn btn-primary" onclick="app.login()">ENTRAR NO APP</button>
             <button class="btn" style="background:none" onclick="app.nav('screen-start')">Voltar</button>
         </div>
     </div>
 
     <div id="screen-main" class="screen">
-        <h2 id="welcome-msg" style="color: var(--primary);">Olá!</h2>
+        <div style="display:flex; justify-content: space-between; align-items: center;">
+            <h3 id="user-title">Olá!</h3>
+            <button onclick="location.reload()" style="background:none; border:none; color:red; cursor:pointer">Sair</button>
+        </div>
         
-        <div id="area-agricultor" style="display:none">
+        <div id="view-agri" style="display:none">
             <div class="card">
-                <h4><i class="fas fa-camera"></i> Postar Produto Real</h4>
+                <h4><i class="fas fa-plus-circle"></i> Anunciar Produto</h4>
                 <div class="upload-box" onclick="document.getElementById('p-file').click()">
-                    <i class="fas fa-image fa-2x"></i><br>Foto do Produto
+                    <i class="fas fa-camera fa-2x"></i><br>Tirar Foto Real
                     <img id="prev" style="width:100%; display:none; margin-top:10px; border-radius:10px;">
                 </div>
                 <input type="file" id="p-file" style="display:none" onchange="app.preview(this)">
-                <input type="text" id="p-nome" placeholder="Produto (Ex: Alface)">
-                <input type="text" id="p-preco" placeholder="Preço (R$)">
-                <button class="btn btn-primary" id="btn-pub" onclick="app.publish()">PUBLICAR NA NUVEM</button>
+                <input type="text" id="p-nome" placeholder="Produto (Ex: Saca de Milho)">
+                <input type="text" id="p-preco" placeholder="Preço (Ex: R$ 50,00)">
+                <button class="btn btn-primary" onclick="app.postAd()">PUBLICAR AGORA</button>
             </div>
             <h4>Meus Anúncios</h4>
-            <div id="list-mine" class="grid"></div>
+            <div id="my-ads" class="grid"></div>
         </div>
 
-        <div id="area-supermercado" style="display:none">
+        <div id="view-super" style="display:none">
             <h4>Vitrine de Produtos Frescos</h4>
-            <div id="list-market" class="grid"></div>
+            <div id="market-list" class="grid"></div>
         </div>
-
-        <button class="btn" style="color: red; background: none; margin-top: 20px;" onclick="location.reload()">Sair da Conta</button>
     </div>
 
     <script>
-        // CONFIGURAÇÃO DO SEU FIREBASE
-        const firebaseConfig = {
-            apiKey: "AIzaSyBCsYWM16EP0G1Liw89G0DwSvFm6CF3aH8",
-            authDomain: "agroconecta-d0247.firebaseapp.com",
-            projectId: "agroconecta-d0247",
-            storageBucket: "agroconecta-d0247.appspot.com",
-            messagingSenderId: "461195415877",
-            appId: "1:461195415877:web:e72e7da89497b434b3aa2c"
-        };
+    const app = {
+        db: JSON.parse(localStorage.getItem('agro_vfinal')) || { users: [], ads: [] },
+        user: null,
+        tempImg: null,
 
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const storage = firebase.storage();
+        init() {
+            setTimeout(() => {
+                document.getElementById('splash').style.opacity = '0';
+                setTimeout(() => document.getElementById('splash').style.display = 'none', 800);
+            }, 2000);
+        },
 
-        const app = {
-            currentRole: 'agricultor',
-            currentUser: null,
-            tempFile: null,
+        nav(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById(id).classList.add('active-screen');
+            window.scrollTo(0,0);
+        },
 
-            init() {
-                setTimeout(() => { document.getElementById('splash').style.opacity = '0'; 
-                setTimeout(() => document.getElementById('splash').style.display = 'none', 800); }, 2000);
-            },
+        setRole(role) {
+            this.currentRole = role;
+            document.getElementById('sel-agri').classList.toggle('selected', role === 'agricultor');
+            document.getElementById('sel-super').classList.toggle('selected', role === 'supermercado');
+            document.getElementById('form-agri').style.display = role === 'agricultor' ? 'block' : 'none';
+            document.getElementById('form-super').style.display = role === 'supermercado' ? 'block' : 'none';
+        },
 
-            nav(id) {
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
-                document.getElementById(id).classList.add('active-screen');
-                window.scrollTo(0,0);
-            },
+        register() {
+            const user = document.getElementById('reg-user').value;
+            const pass = document.getElementById('reg-pass').value;
+            if(!user || !pass) return alert("Preencha Usuário e Senha!");
 
-            setRole(role) {
-                this.currentRole = role;
-                document.getElementById('sel-agri').classList.toggle('selected', role === 'agricultor');
-                document.getElementById('sel-super').classList.toggle('selected', role === 'supermercado');
-                document.getElementById('form-agri').style.display = (role === 'agricultor') ? 'block' : 'none';
-                document.getElementById('form-super').style.display = (role === 'supermercado') ? 'block' : 'none';
-            },
+            const role = document.getElementById('sel-agri').classList.contains('selected') ? 'agricultor' : 'supermercado';
+            
+            const newUser = {
+                user, pass, role,
+                nome: role === 'agricultor' ? document.getElementById('reg-nome-agri').value : document.getElementById('reg-loja').value,
+                whats: document.getElementById('reg-whats').value || ""
+            };
 
-            async handleRegister() {
-                const user = document.getElementById('reg-user').value;
-                const pass = document.getElementById('reg-pass').value;
-                if(!user || !pass) return alert("Usuário e Senha obrigatórios!");
+            this.db.users.push(newUser);
+            this.save();
+            alert("Cadastro realizado com sucesso!");
+            this.nav('screen-login');
+        },
 
-                const dados = {
-                    user, pass, role: this.currentRole,
-                    nomeExibicao: this.currentRole === 'agricultor' ? document.getElementById('reg-nome-completo').value : document.getElementById('reg-loja').value,
-                    cidade: document.getElementById('reg-cidade').value || "",
-                    whats: document.getElementById('reg-whats').value || ""
-                };
-
-                await db.collection("usuarios").doc(user).set(dados);
-                alert("Conta criada! Faça login agora.");
-                this.nav('screen-login');
-            },
-
-            async handleLogin() {
-                const user = document.getElementById('login-user').value;
-                const pass = document.getElementById('login-pass').value;
-                
-                const doc = await db.collection("usuarios").doc(user).get();
-                if(doc.exists && doc.data().pass === pass) {
-                    this.currentUser = doc.data();
-                    this.enterApp();
-                } else { alert("Usuário ou senha incorretos!"); }
-            },
-
-            enterApp() {
+        login() {
+            const u = document.getElementById('log-user').value;
+            const p = document.getElementById('log-pass').value;
+            const found = this.db.users.find(x => x.user === u && x.pass === p);
+            
+            if(found) {
+                this.user = found;
                 this.nav('screen-main');
-                document.getElementById('welcome-msg').innerText = "Olá, " + this.currentUser.nomeExibicao;
-                if(this.currentUser.role === 'agricultor') {
-                    document.getElementById('area-agricultor').style.display = 'block';
-                    this.loadMyAds();
-                } else {
-                    document.getElementById('area-supermercado').style.display = 'block';
-                    this.loadMarket();
-                }
-            },
+                this.render();
+            } else { alert("Usuário ou senha incorretos!"); }
+        },
 
-            preview(input) {
-                if(input.files[0]) {
-                    this.tempFile = input.files[0];
-                    const reader = new FileReader();
-                    reader.onload = (e) => { 
-                        const img = document.getElementById('prev');
-                        img.src = e.target.result; img.style.display = 'block';
-                    };
-                    reader.readAsDataURL(input.files[0]);
-                }
-            },
-
-            async publish() {
-                const btn = document.getElementById('btn-pub');
-                const nome = document.getElementById('p-nome').value;
-                const preco = document.getElementById('p-preco').value;
-
-                if(!this.tempFile || !nome) return alert("Adicione foto e nome!");
-                
-                btn.disabled = true; btn.innerText = "Subindo para nuvem...";
-
-                const ref = storage.ref(`produtos/${Date.now()}_${this.tempFile.name}`);
-                await ref.put(this.tempFile);
-                const url = await ref.getDownloadURL();
-
-                await db.collection("anuncios").add({
-                    nome, preco, url, 
-                    vendedor: this.currentUser.nomeExibicao,
-                    whats: this.currentUser.whats,
-                    data: new Date()
-                });
-
-                alert("Publicado!");
-                location.reload();
-            },
-
-            loadMarket() {
-                db.collection("anuncios").orderBy("data", "desc").onSnapshot(snap => {
-                    const grid = document.getElementById('list-market');
-                    grid.innerHTML = "";
-                    snap.forEach(doc => {
-                        const p = doc.data();
-                        grid.innerHTML += `
-                            <div class="prod-card">
-                                <img src="${p.url}" class="prod-img">
-                                <div style="padding:10px">
-                                    <b>${p.nome}</b><br><span style="color:var(--secondary)">${p.preco}</span><br>
-                                    <button onclick="window.open('https://wa.me/${p.whats}')" class="btn btn-primary" style="padding:5px; font-size:0.7rem; background:#25d366; margin-top:5px">NEGOCIAR</button>
-                                </div>
-                            </div>`;
-                    });
-                });
-            },
-
-            loadMyAds() {
-                db.collection("anuncios").where("vendedor", "==", this.currentUser.nomeExibicao).onSnapshot(snap => {
-                    const grid = document.getElementById('list-mine');
-                    grid.innerHTML = "";
-                    snap.forEach(doc => {
-                        const p = doc.data();
-                        grid.innerHTML += `<div class="prod-card"><img src="${p.url}" class="prod-img"><div style="padding:10px"><b>${p.nome}</b></div></div>`;
-                    });
-                });
+        preview(input) {
+            if(input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.tempImg = e.target.result;
+                    const img = document.getElementById('prev');
+                    img.src = e.target.result; img.style.display = 'block';
+                };
+                reader.readAsDataURL(input.files[0]);
             }
-        };
-        app.init();
+        },
+
+        postAd() {
+            const nome = document.getElementById('p-nome').value;
+            const preco = document.getElementById('p-preco').value;
+            if(!this.tempImg || !nome) return alert("Foto e Nome são obrigatórios!");
+
+            this.db.ads.push({
+                nome, preco, img: this.tempImg,
+                vendedor: this.user.nome,
+                whats: this.user.whats
+            });
+            this.save();
+            alert("Produto publicado na vitrine!");
+            this.tempImg = null;
+            document.getElementById('prev').style.display = 'none';
+            document.getElementById('p-nome').value = "";
+            document.getElementById('p-preco').value = "";
+            this.render();
+        },
+
+        render() {
+            document.getElementById('user-title').innerText = "Olá, " + this.user.nome;
+            document.getElementById('view-agri').style.display = this.user.role === 'agricultor' ? 'block' : 'none';
+            document.getElementById('view-super').style.display = this.user.role === 'supermercado' ? 'block' : 'none';
+            
+            // Renderiza Vitrine para Supermercado
+            const market = document.getElementById('market-list');
+            market.innerHTML = this.db.ads.map(a => `
+                <div class="prod-card">
+                    <img src="${a.img}" class="prod-img">
+                    <div style="padding:10px">
+                        <b>${a.nome}</b><br>
+                        <span style="color:var(--secondary);font-weight:bold">${a.preco}</span><br>
+                        <small>De: ${a.vendedor}</small>
+                        <button class="btn btn-primary" style="padding:5px;font-size:10px;background:#25d366" onclick="window.open('https://wa.me/${a.whats}')">WHATSAPP</button>
+                    </div>
+                </div>
+            `).join('');
+
+            // Renderiza Meus Anúncios para Agricultor
+            const mine = document.getElementById('my-ads');
+            mine.innerHTML = this.db.ads.filter(a => a.vendedor === this.user.nome).map(a => `
+                <div class="prod-card">
+                    <img src="${a.img}" class="prod-img">
+                    <div style="padding:10px"><b>${a.nome}</b><br>${a.preco}</div>
+                </div>
+            `).join('');
+        },
+
+        save() { localStorage.setItem('agro_vfinal', JSON.stringify(this.db)); }
+    };
+    app.init();
     </script>
 </body>
 </html>
