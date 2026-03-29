@@ -3,60 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AgroConecta | Oficial</title>
+    <title>AgroConecta | Plataforma Cloud de Agronegócio</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
     <style>
-        :root { --primary: #2e7d32; --secondary: #f57c00; --bg: #f4f7f6; --white: #ffffff; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #333; }
+        /* --- VARIÁVEIS DE DESIGN --- */
+        :root { 
+            --primary: #1b5e20; /* Verde Floresta Profundo */
+            --primary-light: #e8f5e9;
+            --secondary: #e65100; /* Laranja Suave */
+            --bg: #f4f7f4; /* Cinza Esverdeado muito claro */
+            --card-bg: #ffffff;
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+            --border: #e0e0e0;
+            --shadow: 0 4px 15px rgba(0,0,0,0.06);
+            --radius-main: 18px;
+            --radius-sm: 10px;
+        }
 
-        /* --- SPLASH ORIGINAL --- */
-        #splash { position: fixed; inset: 0; background: var(--primary); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; color: white; transition: 0.8s; }
-        #splash h1 { font-size: 2.2rem; letter-spacing: 3px; margin: 15px 0 5px 0; }
-        .splash-anim { width: 50px; height: 3px; background: white; margin-top: 20px; position: relative; overflow: hidden; }
-        .splash-anim::after { content: ''; position: absolute; left: -100%; top: 0; height: 100%; width: 100%; background: rgba(255,255,255,0.5); animation: loading 1.5s infinite; }
+        /* --- ESTILOS GERAIS E RESET --- */
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+            background-color: var(--bg); 
+            color: var(--text-main); 
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ESTILOS ADICIONADOS PARA INDICADORES */
+        .status-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .status-item { background: white; padding: 10px; border-radius: 12px; text-align: center; border: 1px solid #e0e0e0; box-shadow: var(--shadow); }
+        .status-item small { display: block; font-size: 0.65rem; color: #777; text-transform: uppercase; font-weight: bold; margin-bottom: 2px; }
+        .status-item span { font-size: 1rem; font-weight: 800; color: var(--primary); }
+
+        /* --- TELA DE ABERTURA (SPLASH) --- */
+        #splash { 
+            position: fixed; 
+            inset: 0; 
+            background: linear-gradient(135deg, var(--primary) 0%, #2e7d32 100%);
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center; 
+            z-index: 9999; 
+            color: white; 
+            transition: opacity 0.8s ease, visibility 0.8s; 
+        }
+        #splash h1 { font-size: 2rem; letter-spacing: 4px; margin: 15px 0 5px 0; }
+        #splash p { font-size: 0.9rem; opacity: 0.8; margin: 0; }
+        .splash-loader { width: 40px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin-top: 20px; position: relative; overflow: hidden; }
+        .splash-loader::after { content: ''; position: absolute; left: -100%; top: 0; height: 100%; width: 100%; background: white; border-radius: 2px; animation: loading 1.5s infinite; }
         @keyframes loading { to { left: 100%; } }
 
-        header { background: var(--primary); color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 1.2rem; position: sticky; top: 0; z-index: 1000; }
+        /* --- CABEÇALHO --- */
+        header { 
+            background-color: var(--card-bg); 
+            color: var(--primary); 
+            padding: 15px; 
+            text-align: center; 
+            font-weight: 800; 
+            font-size: 1.2rem; 
+            position: sticky; 
+            top: 0; 
+            z-index: 1000; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03); 
+            letter-spacing: 1px;
+        }
 
-        /* --- TELAS --- */
-        .screen { display: none; padding: 20px; box-sizing: border-box; min-height: calc(100vh - 60px); animation: fadeIn 0.4s ease; max-width: 600px; margin: 0 auto; }
+        /* --- ESTRUTURA DE TELAS --- */
+        .screen { 
+            display: none; 
+            padding: 20px; 
+            box-sizing: border-box; 
+            min-height: calc(100vh - 60px); 
+            animation: fadeIn 0.5s ease-out; 
+        }
         .active-screen { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 20px; border: 1px solid #eee; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 10px; box-sizing: border-box; font-size: 1rem; outline: none; }
+        /* --- COMPONENTES UI: CARDS, INPUTS, BOTÕES --- */
+        .card { 
+            background-color: var(--card-bg); 
+            padding: 25px; 
+            border-radius: var(--radius-main); 
+            box-shadow: var(--shadow); 
+            max-width: 480px; 
+            margin: 10px auto 20px auto; 
+            border: 1px solid rgba(0,0,0,0.03);
+        }
         
-        .btn { width: 100%; padding: 15px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1rem; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-primary { background: var(--primary); color: white; }
-        .btn-outline { background: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .form-group { margin-bottom: 15px; text-align: left; }
+        .form-row { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; }
+        
+        label { display: block; font-size: 0.8rem; font-weight: 700; color: var(--primary); margin-bottom: 5px; margin-left: 5px; }
+        
+        input, select { 
+            width: 100%; 
+            padding: 14px; 
+            margin: 5px 0; 
+            border: 1.5px solid #eee; 
+            border-radius: var(--radius-sm); 
+            box-sizing: border-box; 
+            font-size: 16px; 
+            outline: none; 
+            transition: all 0.3s; 
+            background-color: #fafafa;
+        }
+        input:focus, select:focus { border-color: var(--primary); background-color: white; box-shadow: 0 0 0 3px rgba(27, 94, 32, 0.05); }
 
-        /* --- INDICADORES ESTÁTICOS --- */
-        .status-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-        .status-item { background: white; padding: 10px; border-radius: 12px; text-align: center; border: 1px solid #e0e0e0; }
-        .status-item small { display: block; font-size: 0.6rem; color: #777; text-transform: uppercase; }
-        .status-item span { font-size: 1rem; font-weight: 800; color: var(--primary); }
+        .btn { 
+            width: 100%; 
+            padding: 16px; 
+            border: none; 
+            border-radius: var(--radius-sm); 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: 0.3s; 
+            font-size: 1rem; 
+            margin-top: 10px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: #144a18; }
+        .btn-outline { background-color: transparent; border: 2px solid var(--primary); color: var(--primary); }
+        .btn-wpp { background-color: #25d366; color: white; text-decoration: none; padding: 12px; border-radius: 8px; font-size: 0.85rem; width: 100%; display: flex; justify-content: center; align-items: center; gap: 8px; font-weight: 700; }
+        .btn-wpp:hover { background-color: #1ebd58; }
 
-        /* --- BUSCA --- */
-        .search-box { background: white; padding: 10px; border-radius: 15px; border: 2px solid var(--primary); margin-bottom: 20px; display: flex; align-items: center; }
-        .search-box input { border: none; margin: 0; padding: 5px; }
+        .manage-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; border-top: 1px solid #eee; padding-top: 12px; }
+        .btn-manage { padding: 8px; font-size: 0.75rem; border-radius: 6px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; text-transform: uppercase; }
+        .btn-sold { background-color: #f39c12; color: white; }
+        .btn-sold:hover { background-color: #d68910; }
+        .btn-del { background-color: #e74c3c; color: white; }
+        .btn-del:hover { background-color: #c0392b; }
 
-        /* SELETOR DE PERFIL */
-        .role-box { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-        .role-option { border: 2px solid #eee; padding: 15px; border-radius: 15px; text-align: center; cursor: pointer; color: #777; }
-        .role-option i { font-size: 1.5rem; margin-bottom: 5px; display: block; }
-        .role-option.selected { border-color: var(--primary); background: #e8f5e9; color: var(--primary); font-weight: bold; }
+        .search-container { position: sticky; top: 60px; z-index: 900; background-color: var(--bg); padding: 10px 0 15px 0; max-width: 480px; margin: 0 auto; }
+        .search-input { border: 2px solid var(--primary); border-radius: 25px; padding: 12px 20px; background-color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.03); }
 
-        /* GRID */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-        .prod-card { background: white; border-radius: 15px; overflow: hidden; border: 1px solid #eee; display: flex; flex-direction: column; }
-        .img-container { width: 100%; height: 120px; background: #f0f0f0; }
-        .prod-img { width: 100%; height: 100%; object-fit: cover; }
-        .prod-info { padding: 10px; }
-        .price { color: var(--secondary); font-weight: 800; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; max-width: 800px; margin: 0 auto; }
+        
+        .prod-card { 
+            background-color: var(--card-bg); 
+            border-radius: var(--radius-main); 
+            overflow: hidden; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05); 
+            display: flex; 
+            flex-direction: column; 
+            height: 100%; 
+            border: 1px solid rgba(0,0,0,0.03); 
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .prod-card:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
+        
+        .img-container { 
+            width: 100%; 
+            height: 140px; 
+            overflow: hidden; 
+            background-color: #f0f0f0; 
+            position: relative;
+        }
+        .prod-img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            object-position: center; 
+            transition: transform 0.5s ease;
+        }
+        .prod-card:hover .prod-img { transform: scale(1.06); } 
+        
+        .is-sold { opacity: 0.6; filter: grayscale(0.9); }
+        .sold-overlay { 
+            position: absolute; inset: 0; background: rgba(0,0,0,0.5); 
+            color: white; display: flex; justify-content: center; align-items: center; 
+            font-weight: 900; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 2px;
+            transform: rotate(-15deg);
+        }
+
+        .prod-info { padding: 12px; display: flex; flex-direction: column; flex-grow: 1; text-align: left; }
+        .location-tag { font-size: 0.7rem; color: #666; background-color: #f1f1f1; padding: 3px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 4px; margin-bottom: 6px; align-self: flex-start; }
+        .prod-info b { display: block; font-size: 0.95rem; color: #222; margin-bottom: 3px; height: 38px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.2; }
+        .price { color: var(--secondary); font-weight: 800; font-size: 1.1rem; margin-bottom: 4px; display: block; }
+        .date-info { font-size: 0.7rem; color: #888; margin-bottom: 12px; display: block; }
+        
+        .upload-area { border: 2px dashed var(--primary); padding: 20px; text-align: center; border-radius: var(--radius-sm); cursor: pointer; background-color: #f1f8f1; margin: 10px 0; color: var(--primary); transition: 0.3s; }
+        .upload-area:hover { background-color: #e8f5e9; border-color: #2e7d32; }
+        .upload-area i { font-size: 2rem; margin-bottom: 8px; }
     </style>
 </head>
 <body>
@@ -64,49 +207,68 @@
     <div id="splash">
         <i class="fas fa-seedling fa-5x"></i>
         <h1>AGROCONECTA</h1>
-        <p>Campo e Cidade Conectados</p>
-        <div class="splash-anim"></div>
+        <p>A vitrine digital da sua produção</p>
+        <div class="splash-loader"></div>
     </div>
 
     <header>AGROCONECTA</header>
 
     <div id="screen-start" class="screen active-screen">
-        <div class="card" style="margin-top: 40px; text-align: center;">
-            <i class="fas fa-leaf fa-4x" style="color: var(--primary); margin-bottom: 20px;"></i>
-            <h2>Bem-vindo!</h2>
-            <button class="btn btn-primary" onclick="app.nav('screen-register')">CRIAR NOVA CONTA</button>
-            <button class="btn btn-outline" onclick="app.nav('screen-login')">JÁ TENHO CONTA (LOGIN)</button>
+        <div class="card" style="margin-top: 60px; text-align: center;">
+            <i class="fas fa-map-marked-alt fa-4x" style="color: var(--primary); margin-bottom: 25px;"></i>
+            <h2 style="color:var(--primary); margin-top:0;">Rastreabilidade Profissional</h2>
+            <p style="color:var(--text-muted); margin-bottom: 30px;">Conectando a produção local diretamente ao mercado comprador.</p>
+            <button class="btn btn-primary" onclick="app.nav('screen-register')"><i class="fas fa-user-plus"></i> CRIAR NOVA CONTA</button>
+            <button class="btn btn-outline" onclick="app.nav('screen-login')"><i class="fas fa-sign-in-alt"></i> ACESSAR MINHA CONTA</button>
+            <p style="font-size: 0.75rem; color: #999; margin-top: 30px;">Showroom Técnico v2.5 | Firebase Cloud</p>
         </div>
     </div>
 
     <div id="screen-register" class="screen">
         <div class="card">
-            <h3>Cadastro</h3>
-            <div class="role-box">
-                <div id="opt-agri" class="role-option selected" onclick="app.setRole('agricultor')"><i class="fas fa-tractor"></i>Agricultor</div>
-                <div id="opt-merc" class="role-option" onclick="app.setRole('supermercado')"><i class="fas fa-shopping-cart"></i>Mercado</div>
+            <h3><i class="fas fa-user-circle"></i> Cadastro de Perfil</h3>
+            <div class="form-group">
+                <label>Tipo de Conta</label>
+                <select id="reg-role" onchange="app.toggleFields()">
+                    <option value="agricultor">🚜 Sou Produtor (Vendedor)</option>
+                    <option value="mercado">🛒 Sou Comprador (Mercado/Restaurante)</option>
+                </select>
             </div>
-            <input type="text" id="reg-user" placeholder="Usuário (Ex: joao123)">
-            <input type="password" id="reg-pass" placeholder="Senha">
-            <div id="form-agri">
-                <input type="text" id="reg-nome" placeholder="Nome Completo">
-                <input type="tel" id="reg-whats" placeholder="WhatsApp (DDD + Número)">
+            <div class="form-group">
+                <label>Nome de Usuário (Login)</label>
+                <input type="text" id="reg-user" placeholder="Ex: joao.agro">
             </div>
-            <div id="form-merc" style="display:none">
-                <input type="text" id="reg-loja" placeholder="Nome do Estabelecimento">
+            <div class="form-group">
+                <label>Crie uma Senha</label>
+                <input type="password" id="reg-pass" placeholder="******">
             </div>
-            <button class="btn btn-primary" onclick="app.register()">CADASTRAR</button>
-            <button class="btn" style="background:none; color:#999" onclick="app.nav('screen-start')">Voltar</button>
+            <div id="fields-agri">
+                <div class="form-group"><label>Nome Completo / Nome do Sítio</label><input type="text" id="reg-nome" placeholder="Ex: Sítio São José"></div>
+                <div class="form-group"><label>WhatsApp (com DDD)</label><input type="tel" id="reg-whats" placeholder="99988887777"></div>
+                <div class="form-group"><label>CAF (Opcional)</label><input type="text" id="reg-caf" placeholder="Cadastro Agric. Familiar"></div>
+            </div>
+            <div id="form-super" style="display:none">
+                <div class="form-group"><label>Nome do Estabelecimento</label><input type="text" id="reg-loja" placeholder="Ex: Supermercado Central"></div>
+                <div class="form-group"><label>CNPJ (Opcional)</label><input type="text" id="reg-cnpj" placeholder="00.000.000/0000-00"></div>
+            </div>
+            <button class="btn btn-primary" onclick="app.register()"><i class="fas fa-cloud-upload-alt"></i> FINALIZAR E SALVAR</button>
+            <button class="btn" style="background:none; color:var(--text-muted);" onclick="app.nav('screen-start')">Voltar</button>
         </div>
     </div>
 
     <div id="screen-login" class="screen">
         <div class="card" style="margin-top: 50px;">
-            <h3>Login</h3>
-            <input type="text" id="log-user" placeholder="Seu usuário">
-            <input type="password" id="log-pass" placeholder="Sua senha">
-            <button class="btn btn-primary" onclick="app.login()">ENTRAR</button>
-            <button class="btn" style="background:none; color:#999" onclick="app.nav('screen-start')">Voltar</button>
+            <h3><i class="fas fa-lock"></i> Acesso Seguro</h3>
+            <div class="form-group">
+                <label>Usuário</label>
+                <input type="text" id="log-user" placeholder="Digite seu usuário">
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" id="log-pass" placeholder="Digite sua senha">
+            </div>
+            <button class="btn btn-primary" onclick="app.login()">ENTRAR NO PAINEL</button>
+            <button class="btn" style="background:none; color:var(--text-muted);" onclick="app.nav('screen-start')">Voltar</button>
         </div>
     </div>
 
@@ -116,32 +278,42 @@
             <div class="status-item"><small>Açailândia-MA</small><span>31°C</span></div>
         </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
-            <h3 id="user-title" style="margin:0">Olá!</h3>
-            <button onclick="location.reload()" style="background:none; border:none; color:red; font-weight:bold">SAIR</button>
-        </div>
-
-        <div id="area-mercado" style="display:none">
-            <div class="search-box">
-                <i class="fas fa-search" style="color:var(--primary); margin-right:10px"></i>
-                <input type="text" id="search-bar" placeholder="Buscar produto, cidade ou UF..." onkeyup="app.render()">
+        <div style="display:flex; justify-content:space-between; align-items:center; background:white; padding:15px; border-radius:15px; margin-bottom:20px; box-shadow:var(--shadow);">
+            <div>
+                <h3 id="user-title" style="margin:0; color:var(--primary);">Olá!</h3>
+                <span id="user-role-label" style="font-size:0.7rem; background:var(--primary); color:white; padding:3px 10px; border-radius:10px; text-transform:uppercase; font-weight:800; letter-spacing:1px;"></span>
             </div>
-            <div id="market-list" class="grid"></div>
+            <button onclick="location.reload()" style="background:#ffeeee; border:none; color:#d32f2f; padding:12px; border-radius:12px; cursor:pointer; font-size:1.1rem;"><i class="fas fa-power-off"></i></button>
         </div>
 
         <div id="area-agricultor" style="display:none">
-            <div class="card">
-                <h4 style="margin:0 0 10px 0">Novo Anúncio</h4>
-                <input type="text" id="p-nome" placeholder="Produto">
-                <input type="text" id="p-preco" placeholder="Preço">
-                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:10px">
-                    <input type="text" id="p-cidade" placeholder="Cidade">
-                    <input type="text" id="p-uf" placeholder="UF" maxlength="2">
+            <div class="card" style="border-top: 5px solid var(--primary); padding: 20px;">
+                <h4 style="margin: 0 0 15px 0; color:var(--primary);"><i class="fas fa-plus-circle"></i> Postar Nova Safra</h4>
+                <div class="form-group"><label>O que você colheu?</label><input type="text" id="p-nome" placeholder="Ex: Saca de Feijão Preto 60kg"></div>
+                <div class="form-group"><label>Preço Sugerido</label><input type="text" id="p-preco" placeholder="Ex: R$ 180,00/saca"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Cidade</label><input type="text" id="p-cidade" placeholder="Ex: Imperatriz"></div>
+                    <div class="form-group"><label>Estado (UF)</label><input type="text" id="p-estado" placeholder="MA" maxlength="2" style="text-transform:uppercase"></div>
                 </div>
-                <input type="file" id="p-file" accept="image/*" onchange="app.previewImage(this)">
-                <button class="btn btn-primary" onclick="app.postProduct()">PUBLICAR</button>
+                <div class="form-group"><label>Data da Colheita (Rastreabilidade)</label><input type="date" id="p-colheita"></div>
+                <label>Foto Real do Produto</label>
+                <div class="upload-area" onclick="document.getElementById('p-file').click()">
+                    <i class="fas fa-camera fa-2x"></i><br><small>Toque para tirar ou escolher foto</small>
+                    <img id="p-preview" style="width:100%; display:none; margin-top:15px; border-radius:var(--radius-sm); box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                </div>
+                <input type="file" id="p-file" accept="image/*" style="display:none" onchange="app.previewImage(this)">
+                <button class="btn btn-primary" id="btn-publish" onclick="app.postProduct()"><i class="fas fa-cloud-upload-alt"></i> PUBLICAR NA NUVEM</button>
             </div>
+            <h4 style="color:var(--primary); margin: 25px 0 15px 0; text-align:left;"><i class="fas fa-tasks"></i> Gestão dos Meus Anúncios</h4>
             <div id="my-list" class="grid"></div>
+        </div>
+
+        <div id="area-mercado" style="display:none">
+            <div class="search-container">
+                <input type="text" id="search-bar" class="search-input" placeholder="🔍 Buscar produto, cidade ou UF..." onkeyup="app.filterSearch()">
+            </div>
+            <h4 style="margin: 0 0 15px 0; text-align:left;"><i class="fas fa-shopping-basket"></i> Ofertas Disponíveis</h4>
+            <div id="market-list" class="grid"></div>
         </div>
     </div>
 
@@ -154,25 +326,22 @@
             messagingSenderId: "461195415877",
             appId: "1:461195415877:web:e72e7d6b9497b624b3ae2c"
         };
+
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
         const app = {
-            user: null, tempImg: null, allProducts: [], currentRole: 'agricultor',
+            user: null, 
+            tempImg: null, 
+            allProducts: [],
 
             init() { 
-                setTimeout(() => { document.getElementById('splash').style.opacity = '0'; setTimeout(() => document.getElementById('splash').style.display = 'none', 800); }, 2000); 
+                setTimeout(() => { 
+                    const splash = document.getElementById('splash');
+                    splash.style.opacity = '0'; 
+                    setTimeout(() => splash.style.display = 'none', 800); 
+                }, 1800); 
                 this.fetchDolar();
-            },
-
-            nav(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen')); document.getElementById(id).classList.add('active-screen'); },
-
-            setRole(role) {
-                this.currentRole = role;
-                document.getElementById('opt-agri').classList.toggle('selected', role === 'agricultor');
-                document.getElementById('opt-merc').classList.toggle('selected', role === 'supermercado');
-                document.getElementById('form-agri').style.display = role === 'agricultor' ? 'block' : 'none';
-                document.getElementById('form-merc').style.display = role === 'supermercado' ? 'block' : 'none';
             },
 
             async fetchDolar() {
@@ -180,90 +349,175 @@
                     const r = await fetch('https://economia.awesomeapi.com.br/last/USD-BRL');
                     const d = await r.json();
                     document.getElementById('dolar-val').innerText = 'R$ ' + parseFloat(d.USDBRL.bid).toFixed(2);
-                } catch(e) {}
+                } catch(e) { console.log("Erro API Dolar"); }
+            },
+
+            nav(id) { 
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen')); 
+                document.getElementById(id).classList.add('active-screen'); 
+                window.scrollTo(0,0);
+            },
+
+            toggleFields() { 
+                const role = document.getElementById('reg-role').value; 
+                document.getElementById('fields-agri').style.display = role === 'agricultor' ? 'block' : 'none'; 
+                document.getElementById('form-super').style.display = role === 'mercado' ? 'block' : 'none'; 
             },
 
             async register() {
-                const u = document.getElementById('reg-user').value.trim();
-                const p = document.getElementById('reg-pass').value;
-                if(!u || !p) return alert("Preencha Usuário e Senha!");
-                
-                const dados = {
-                    user: u, pass: p, role: this.currentRole,
-                    nome: this.currentRole === 'agricultor' ? document.getElementById('reg-nome').value : document.getElementById('reg-loja').value,
-                    whats: this.currentRole === 'agricultor' ? document.getElementById('reg-whats').value : "000"
+                const user = document.getElementById('reg-user').value.trim();
+                const pass = document.getElementById('reg-pass').value;
+                const role = document.getElementById('reg-role').value;
+                if(!user || !pass) return alert("⚠️ Usuário e Senha são obrigatórios!");
+                const dados = { 
+                    user, pass, role, 
+                    nome: role === 'agricultor' ? document.getElementById('reg-nome').value : document.getElementById('reg-loja').value, 
+                    whats: document.getElementById('reg-whats').value || "",
+                    doc: role === 'agricultor' ? document.getElementById('reg-caf').value : document.getElementById('reg-cnpj').value,
+                    criadoEm: firebase.firestore.FieldValue.serverTimestamp()
                 };
-
-                await db.collection("usuarios").doc(u).set(dados);
-                alert("Cadastro realizado!"); this.nav('screen-login');
+                try {
+                    await db.collection("usuarios").doc(user).set(dados);
+                    alert("✅ Conta sincronizada na nuvem!");
+                    this.nav('screen-login');
+                } catch(e) { alert("❌ Erro no Firebase."); }
             },
 
             async login() {
                 const u = document.getElementById('log-user').value.trim();
                 const p = document.getElementById('log-pass').value;
-                
+                if(!u || !p) return alert("⚠️ Preencha os campos.");
                 try {
                     const doc = await db.collection("usuarios").doc(u).get();
-                    if(doc.exists && doc.data().pass === p) {
-                        this.user = doc.data();
-                        this.setupDashboard();
-                        this.nav('screen-main');
-                    } else { alert("Usuário ou senha incorretos!"); }
-                } catch(e) { alert("Erro ao conectar!"); }
+                    if(doc.exists && doc.data().pass === p) { 
+                        this.user = doc.data(); 
+                        this.setupDashboard(); 
+                        this.nav('screen-main'); 
+                    } else { alert("❌ Usuário ou senha incorretos."); }
+                } catch(e) { alert("❌ Erro de conexão."); }
             },
 
             setupDashboard() {
                 document.getElementById('user-title').innerText = "Olá, " + this.user.nome;
-                document.getElementById('area-agricultor').style.display = this.user.role === 'agricultor' ? 'block' : 'none';
-                document.getElementById('area-mercado').style.display = this.user.role === 'supermercado' ? 'block' : 'none';
+                const roleLabel = document.getElementById('user-role-label');
+                roleLabel.innerText = this.user.role;
+                if(this.user.role === 'agricultor') {
+                    document.getElementById('area-agricultor').style.display = 'block';
+                    document.getElementById('area-mercado').style.display = 'none';
+                    roleLabel.style.background = "#1b5e20"; 
+                } else {
+                    document.getElementById('area-mercado').style.display = 'block';
+                    document.getElementById('area-agricultor').style.display = 'none';
+                    roleLabel.style.background = "#e65100"; 
+                }
                 this.listenProducts();
             },
 
             previewImage(input) {
-                const reader = new FileReader();
-                reader.onload = (e) => { this.tempImg = e.target.result; };
-                reader.readAsDataURL(input.files[0]);
+                if(input.files[0]) {
+                    if(input.files[0].size > 1048576) { alert("⚠️ Escolha uma foto menor que 1MB."); input.value = ""; return; }
+                    const reader = new FileReader();
+                    reader.onload = (e) => { 
+                        this.tempImg = e.target.result;
+                        const imgPrev = document.getElementById('p-preview');
+                        imgPrev.src = e.target.result; 
+                        imgPrev.style.display = 'block'; 
+                    };
+                    reader.readAsDataURL(input.files[0]);
+                }
             },
 
             async postProduct() {
-                const n = document.getElementById('p-nome').value;
-                const pr = document.getElementById('p-preco').value;
-                if(!n || !this.tempImg) return alert("Falta foto ou nome!");
-                await db.collection("produtos").add({
-                    nome: n, preco: pr, foto: this.tempImg,
-                    cidade: document.getElementById('p-cidade').value,
-                    uf: document.getElementById('p-uf').value,
-                    userId: this.user.user, whats: this.user.whats, timestamp: new Date().getTime()
-                });
-                alert("Publicado!");
+                const nome = document.getElementById('p-nome').value.trim();
+                const preco = document.getElementById('p-preco').value.trim();
+                const dataCol = document.getElementById('p-colheita').value;
+                const cidade = document.getElementById('p-cidade').value.trim();
+                const estado = document.getElementById('p-estado').value.trim().toUpperCase();
+                if(!nome || !this.tempImg || !cidade || !estado) return alert("⚠️ Preencha todos os dados e a foto!");
+                const btn = document.getElementById('btn-publish');
+                btn.innerHTML = "<i class='fas fa-spinner fa-spin'></i> Subindo...";
+                btn.disabled = true;
+                const novoProduto = {
+                    nome, preco, dataCol, cidade, estado,
+                    foto: this.tempImg,
+                    vendedor: this.user.nome, 
+                    whats: this.user.whats, 
+                    userId: this.user.user, 
+                    status: 'disponivel',
+                    timestamp: new Date().getTime()
+                };
+                try {
+                    await db.collection("produtos").add(novoProduto);
+                    alert("✅ Produto publicado!");
+                    document.getElementById('p-nome').value = ""; document.getElementById('p-preco').value = "";
+                    document.getElementById('p-preview').style.display = 'none'; this.tempImg = null;
+                } catch(e) { alert("❌ Falha no Firestore."); }
+                btn.innerHTML = "<i class='fas fa-cloud-upload-alt'></i> PUBLICAR NA NUVEM";
+                btn.disabled = false;
+            },
+
+            async markAsSold(id) {
+                if(confirm("📋 Marcar como VENDIDO?")) {
+                    try { await db.collection("produtos").doc(id).update({ status: 'vendido' }); } catch(e) {}
+                }
+            },
+
+            async deleteProduct(id) {
+                if(confirm("⚠️ Excluir anúncio permanentemente?")) {
+                    try { await db.collection("produtos").doc(id).delete(); } catch(e) {}
+                }
             },
 
             listenProducts() {
                 db.collection("produtos").orderBy("timestamp", "desc").onSnapshot(snap => {
-                    this.allProducts = []; snap.forEach(doc => { this.allProducts.push(doc.data()); });
+                    this.allProducts = [];
+                    snap.forEach(doc => { 
+                        let d = doc.data(); 
+                        d.id = doc.id;
+                        this.allProducts.push(d); 
+                    });
                     this.render();
                 });
             },
 
+            filterSearch() { this.render(); },
+
             render() {
                 const mList = document.getElementById('market-list');
                 const myList = document.getElementById('my-list');
-                const term = document.getElementById('search-bar').value.toLowerCase();
+                const term = document.getElementById('search-bar').value.toLowerCase().trim();
                 mList.innerHTML = ""; myList.innerHTML = "";
-
                 this.allProducts.forEach(p => {
-                    const card = `<div class="prod-card">
-                        <div class="img-container"><img src="${p.foto}" class="prod-img"></div>
-                        <div class="prod-info">
-                            <small>${p.cidade || ''} - ${p.uf || ''}</small><br>
-                            <b>${p.nome}</b><br><span class="price">${p.preco}</span>
-                            ${this.user.role === 'supermercado' ? `<a href="https://wa.me/55${p.whats}" class="btn-primary" style="text-decoration:none; font-size:0.7rem; padding:5px; margin-top:5px; border-radius:5px">NEGOCIAR</a>` : ''}
-                        </div>
-                    </div>`;
-                    
-                    const match = p.nome.toLowerCase().includes(term) || (p.cidade && p.cidade.toLowerCase().includes(term)) || (p.uf && p.uf.toLowerCase().includes(term));
-                    if(match) mList.innerHTML += card;
-                    if(p.userId === this.user.user) myList.innerHTML += card;
+                    const isSold = p.status === 'vendido';
+                    const souDono = this.user.user === p.userId;
+                    const condicaoBusca = p.nome.toLowerCase().includes(term) || p.cidade.toLowerCase().includes(term) || p.estado.toLowerCase().includes(term);
+                    const dataFormat = p.dataCol ? p.dataCol.split('-').reverse().join('/') : 'ñ informada';
+                    const cardHtml = `
+                        <div class="prod-card ${isSold ? 'is-sold' : ''}">
+                            <div class="img-container">
+                                ${isSold ? '<div class="sold-overlay">VENDIDO</div>' : ''}
+                                <img src="${p.foto}" class="prod-img">
+                            </div>
+                            <div class="prod-info">
+                                <span class="location-tag"><i class="fas fa-map-marker-alt"></i> ${p.cidade} - ${p.estado}</span>
+                                <b>${p.nome}</b>
+                                <span class="price">${p.preco}</span>
+                                <span class="date-info"><i class="fas fa-calendar-check"></i> Colheita: ${dataFormat}</span>
+                                ${!isSold && this.user.role === 'mercado' ? `
+                                    <a href="https://wa.me/55${p.whats.replace(/\D/g,'')}" class="btn-wpp" target="_blank">
+                                        <i class="fab fa-whatsapp"></i> NEGOCIAR
+                                    </a>` : ''
+                                }
+                                ${souDono ? `
+                                    <div class="manage-btns">
+                                        ${!isSold ? `<button class="btn-manage btn-sold" onclick="app.markAsSold('${p.id}')"><i class="fas fa-check"></i> Vendido</button>` : '<span></span>'}
+                                        <button class="btn-manage btn-del" onclick="app.deleteProduct('${p.id}')"><i class="fas fa-trash"></i> Excluir</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>`;
+                    if(condicaoBusca) mList.innerHTML += cardHtml;
+                    if(souDono) myList.innerHTML += cardHtml;
                 });
             }
         };
